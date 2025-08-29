@@ -1,5 +1,14 @@
 import Link from 'next/link';
-import { Alert, Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core';
 import { format } from 'date-fns';
 import { auth } from '@/app/auth';
 
@@ -15,9 +24,12 @@ type EventListItem = {
 export default async function HomePage() {
   const session = await auth();
   const isAdmin = (session?.user as any)?.role === 'admin';
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/events`, {
-    cache: 'no-store',
-  }).catch(() => undefined);
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/events`,
+    {
+      cache: 'no-store',
+    }
+  ).catch(() => undefined);
 
   let events: EventListItem[] = [];
   if (res?.ok) {
@@ -31,7 +43,9 @@ export default async function HomePage() {
       {events.length === 0 && (
         <Alert title="Nothing scheduled yet" color="gray" variant="light">
           <Stack gap={8}>
-            <Text c="dimmed">No upcoming events yet. Please check back soon.</Text>
+            <Text c="dimmed">
+              No upcoming events yet. Please check back soon.
+            </Text>
             {isAdmin && (
               <Button component={Link} href="/admin" variant="light">
                 Create an event (admins)
@@ -43,7 +57,13 @@ export default async function HomePage() {
       {events.map((event) => {
         const starts = new Date(event.startsAt);
         return (
-          <Card key={event.id} withBorder shadow="sm" component={Link} href={`/events/${event.id}`}>
+          <Card
+            key={event.id}
+            withBorder
+            shadow="sm"
+            component={Link}
+            href={`/events/${event.id}`}
+          >
             <Group justify="space-between" mb="xs">
               <Title order={4}>{event.title}</Title>
               <Badge>{format(starts, 'eee, MMM d • h:mma')}</Badge>
