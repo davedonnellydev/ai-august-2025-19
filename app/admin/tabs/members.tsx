@@ -56,7 +56,7 @@ export default function MembersTab() {
           <Table.Th>Email</Table.Th>
           <Table.Th>Role</Table.Th>
           <Table.Th>Status</Table.Th>
-          <Table.Th></Table.Th>
+          <Table.Th>Action</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>

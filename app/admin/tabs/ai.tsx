@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core';
+import { Button, Card, Group, Stack, Text, Title } from '@mantine/core';
 
 type EventDetail = {
   id: string;
@@ -18,7 +18,9 @@ export default function AITab() {
   const load = async () => {
     // Simple approach: reuse /api/events list then fetch each detail
     const res = await fetch('/api/events');
-    if (!res.ok) return;
+    if (!res.ok) {
+      return;
+    }
     const { events: list } = (await res.json()) as {
       events: { id: string; title: string }[];
     };

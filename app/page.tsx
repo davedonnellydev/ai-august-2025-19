@@ -25,9 +25,9 @@ type EventListItem = {
 export default async function HomePage() {
   const session = await auth();
   const isAdmin = (session?.user as any)?.role === 'admin';
-  const res = await fetch(`${getBaseUrl()}/api/events`, { cache: 'no-store' }).catch(
-    () => undefined
-  );
+  const res = await fetch(`${getBaseUrl()}/api/events`, {
+    cache: 'no-store',
+  }).catch(() => undefined);
 
   let events: EventListItem[] = [];
   if (res?.ok) {

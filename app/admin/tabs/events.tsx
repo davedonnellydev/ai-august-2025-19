@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   Group,
-  Select,
   Stack,
   Text,
   TextInput,
@@ -22,13 +21,13 @@ type EventItem = {
   contentCount: number;
 };
 
-type ContentItem = {
-  id: string;
-  type: 'book' | 'podcast' | 'film' | 'other';
-  title: string;
-  sourceUrl: string | null;
-  notes: string | null;
-};
+// type ContentItem = {
+//   id: string;
+//   type: 'book' | 'podcast' | 'film' | 'other';
+//   title: string;
+//   sourceUrl: string | null;
+//   notes: string | null;
+// };
 
 export default function EventsTab() {
   const [title, setTitle] = useState('');
