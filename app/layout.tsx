@@ -3,10 +3,12 @@ import '@mantine/core/styles.css';
 import React from 'react';
 import {
   ColorSchemeScript,
-  mantineHtmlProps,
   MantineProvider,
+  mantineHtmlProps,
 } from '@mantine/core';
 import { theme } from '../theme';
+import Providers from './providers';
+import AppFrame from './components/AppFrame';
 
 export const metadata = {
   title: 'Content Club',
@@ -14,7 +16,11 @@ export const metadata = {
     'An AI powered "content" club manager app built for AIAugust App a Day Challenge',
 };
 
-export default function RootLayout({ children }: { children: any }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" {...mantineHtmlProps}>
       <head>
@@ -26,7 +32,11 @@ export default function RootLayout({ children }: { children: any }) {
         />
       </head>
       <body>
-        <MantineProvider theme={theme}>{children}</MantineProvider>
+        <MantineProvider theme={theme}>
+          <Providers>
+            <AppFrame>{children}</AppFrame>
+          </Providers>
+        </MantineProvider>
       </body>
     </html>
   );
