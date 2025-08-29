@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Alert, Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core';
 import { format } from 'date-fns';
+import { auth } from '@/app/auth';
 
 type EventListItem = {
   id: string;
@@ -12,6 +13,8 @@ type EventListItem = {
 };
 
 export default async function HomePage() {
+  const session = await auth();
+  const isAdmin = (session?.user as any)?.role === 'admin';
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/events`, {
     cache: 'no-store',
   }).catch(() => undefined);
@@ -29,9 +32,11 @@ export default async function HomePage() {
         <Alert title="Nothing scheduled yet" color="gray" variant="light">
           <Stack gap={8}>
             <Text c="dimmed">No upcoming events yet. Please check back soon.</Text>
-            <Button component={Link} href="/admin" variant="light">
-              Create an event (admins)
-            </Button>
+            {isAdmin && (
+              <Button component={Link} href="/admin" variant="light">
+                Create an event (admins)
+              </Button>
+            )}
           </Stack>
         </Alert>
       )}
