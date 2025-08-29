@@ -10,7 +10,8 @@ import { theme } from '../theme';
 
 export const metadata = {
   title: 'Content Club',
-  description: 'An AI powered "content" club manager app built for AIAugust App a Day Challenge',
+  description:
+    'An AI powered "content" club manager app built for AIAugust App a Day Challenge',
 };
 
 export default function RootLayout({ children }: { children: any }) {
