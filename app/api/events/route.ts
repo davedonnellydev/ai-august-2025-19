@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/app/db/client';
 import { contentItems, events, rsvps } from '@/app/db/schema';
-import { and, count, desc, eq, gt, sql } from 'drizzle-orm';
+import { eq, gt, sql } from 'drizzle-orm';
 import { requireAdmin } from '@/app/lib/authz';
 
 const createEventSchema = z.object({

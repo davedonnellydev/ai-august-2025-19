@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/app/db/client';
 import { aiOutputs, contentItems, events } from '@/app/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { requireAdminOrFacilitator } from '@/app/lib/authz';
 
 const updateEventSchema = z.object({
@@ -19,17 +19,22 @@ export async function GET(
   const id = params.id;
 
   const event = await db.query.events.findFirst({ where: eq(events.id, id) });
-  if (!event) return Response.json({ error: 'Not found' }, { status: 404 });
+  if (!event) {
+    return Response.json({ error: 'Not found' }, { status: 404 });
+  }
 
   const items = await db
     .select()
     .from(contentItems)
     .where(eq(contentItems.eventId, id));
 
-  const outputs = await db
-    .select()
-    .from(aiOutputs)
-    .where(and(eq(aiOutputs.contentItemId, contentItems.id as any)) as any);
+  const itemIds = items.map((i) => i.id);
+  const outputs = itemIds.length
+    ? await db
+        .select()
+        .from(aiOutputs)
+        .where(inArray(aiOutputs.contentItemId, itemIds))
+    : [];
 
   return Response.json({ event, contentItems: items, aiOutputs: outputs });
 }

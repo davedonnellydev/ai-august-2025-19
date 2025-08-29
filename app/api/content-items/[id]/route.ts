@@ -20,7 +20,9 @@ export async function PATCH(
   const item = await db.query.contentItems.findFirst({
     where: eq(contentItems.id, id),
   });
-  if (!item) return Response.json({ error: 'Not found' }, { status: 404 });
+  if (!item) {
+    return Response.json({ error: 'Not found' }, { status: 404 });
+  }
   await requireAdminOrFacilitator(item.eventId);
 
   const json = await req.json();
@@ -48,7 +50,9 @@ export async function DELETE(
   const item = await db.query.contentItems.findFirst({
     where: eq(contentItems.id, id),
   });
-  if (!item) return Response.json({ error: 'Not found' }, { status: 404 });
+  if (!item) {
+    return Response.json({ error: 'Not found' }, { status: 404 });
+  }
   await requireAdminOrFacilitator(item.eventId);
 
   await db.delete(contentItems).where(eq(contentItems.id, id));

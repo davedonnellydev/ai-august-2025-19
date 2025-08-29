@@ -18,8 +18,12 @@ export async function PATCH(
   const json = await req.json();
   const body = updateMemberSchema.parse(json);
 
-  const club = await db.query.clubs.findFirst({ where: eq(clubs.slug, 'ai-content-club') });
-  if (!club) return Response.json({ error: 'Club not found' }, { status: 404 });
+  const club = await db.query.clubs.findFirst({
+    where: eq(clubs.slug, 'ai-content-club'),
+  });
+  if (!club) {
+    return Response.json({ error: 'Club not found' }, { status: 404 });
+  }
 
   // Ensure membership exists
   await db
@@ -31,16 +35,29 @@ export async function PATCH(
     await db
       .update(memberships)
       .set({ status: body.membershipStatus })
-      .where(and(eq(memberships.clubId, club.id), eq(memberships.userId, params.userId)));
+      .where(
+        and(
+          eq(memberships.clubId, club.id),
+          eq(memberships.userId, params.userId)
+        )
+      );
   }
 
   if (body.promoteToAdmin) {
-    await db.update(users).set({ role: 'admin' }).where(eq(users.id, params.userId));
+    await db
+      .update(users)
+      .set({ role: 'admin' })
+      .where(eq(users.id, params.userId));
   }
 
-  const user = await db.query.users.findFirst({ where: eq(users.id, params.userId) });
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, params.userId),
+  });
   const membership = await db.query.memberships.findFirst({
-    where: and(eq(memberships.clubId, club.id), eq(memberships.userId, params.userId)),
+    where: and(
+      eq(memberships.clubId, club.id),
+      eq(memberships.userId, params.userId)
+    ),
     orderBy: [desc(memberships.createdAt)],
   });
 

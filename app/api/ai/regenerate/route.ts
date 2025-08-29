@@ -12,8 +12,12 @@ export async function POST(req: NextRequest) {
   const json = await req.json();
   const { contentItemId } = bodySchema.parse(json);
 
-  const item = await db.query.contentItems.findFirst({ where: eq(contentItems.id, contentItemId) });
-  if (!item) return Response.json({ error: 'Not found' }, { status: 404 });
+  const item = await db.query.contentItems.findFirst({
+    where: eq(contentItems.id, contentItemId),
+  });
+  if (!item) {
+    return Response.json({ error: 'Not found' }, { status: 404 });
+  }
 
   await requireAdminOrFacilitator(item.eventId);
 

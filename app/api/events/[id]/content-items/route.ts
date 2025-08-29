@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/app/db/client';
 import { contentItems } from '@/app/db/schema';
-import { and, count, eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import { requireAdminOrFacilitator } from '@/app/lib/authz';
 
 const createContentItemSchema = z.object({

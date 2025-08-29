@@ -8,8 +8,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const session = await auth();
-  if (!session?.user?.id)
+  if (!session?.user?.id) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const row = await db.query.rsvps.findFirst({
     where: and(

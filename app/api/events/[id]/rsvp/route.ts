@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/app/db/client';
-import { memberships, rsvps, users } from '@/app/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { rsvps } from '@/app/db/schema';
 import { auth } from '@/app/auth';
 
 const rsvpSchema = z.object({
@@ -15,8 +14,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   const session = await auth();
-  if (!session?.user?.id)
+  if (!session?.user?.id) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   if ((session.user as any).membershipStatus !== 'active') {
     return Response.json({ error: 'Membership not active' }, { status: 403 });
   }

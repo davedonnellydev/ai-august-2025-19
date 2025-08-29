@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { zodTextFormat } from "openai/helpers/zod";
+import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -39,9 +39,9 @@ export async function generateAIOutputsForContentItem(input: {
 1) A short summary (150-200 words) of the content
 2) A long summary (400-600 words)
 3) 6-10 open-ended discussion questions
-4) 3-5 facilitator activities with duration (5-60 min) and clear goals`
+4) 3-5 facilitator activities with duration (5-60 min) and clear goals`;
 
-const userPrompt = `Content item details:
+  const userPrompt = `Content item details:
 - Type: ${input.type}
 - Title: ${input.title}
 - URL: ${input.sourceUrl ?? 'n/a'}
@@ -54,16 +54,18 @@ const userPrompt = `Content item details:
     instructions,
     input: userPrompt,
     text: {
-        format: zodTextFormat(ContentSummary, "content_summary")
-    }
+      format: zodTextFormat(ContentSummary, 'content_summary'),
+    },
   });
 
   // Prefer the convenience field if present; fall back to first parsed item
   const parsedDirect = (response as any).output_parsed as AIOutputs | undefined;
-  const parsedFirst = (response as any).output?.[0]?.parsed as AIOutputs | undefined;
+  const parsedFirst = (response as any).output?.[0]?.parsed as
+    | AIOutputs
+    | undefined;
   const parsed = parsedDirect ?? parsedFirst;
-  if (!parsed) throw new Error('Failed to parse structured output');
+  if (!parsed) {
+    throw new Error('Failed to parse structured output');
+  }
   return parsed;
 }
-
-
