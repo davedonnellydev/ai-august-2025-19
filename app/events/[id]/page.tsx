@@ -2,6 +2,7 @@ import { Badge, Card, Group, Stack, Text, Title } from '@mantine/core';
 import { format } from 'date-fns';
 import { auth } from '@/app/auth';
 import RsvpForm from './rsvp-form';
+import { getBaseUrl } from '@/app/lib/utils/url';
 
 type ContentItem = {
   id: string;
@@ -41,12 +42,9 @@ export default async function EventDetailPage({
   const { id } = await params;
   const session = await auth();
 
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/events/${id}`,
-    {
-      cache: 'no-store',
-    }
-  );
+  const res = await fetch(`${getBaseUrl()}/api/events/${id}`, {
+    cache: 'no-store',
+  });
   if (!res.ok) {
     return (
       <Stack>

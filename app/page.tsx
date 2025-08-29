@@ -11,6 +11,7 @@ import {
 } from '@mantine/core';
 import { format } from 'date-fns';
 import { auth } from '@/app/auth';
+import { getBaseUrl } from '@/app/lib/utils/url';
 
 type EventListItem = {
   id: string;
@@ -24,12 +25,9 @@ type EventListItem = {
 export default async function HomePage() {
   const session = await auth();
   const isAdmin = (session?.user as any)?.role === 'admin';
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/events`,
-    {
-      cache: 'no-store',
-    }
-  ).catch(() => undefined);
+  const res = await fetch(`${getBaseUrl()}/api/events`, { cache: 'no-store' }).catch(
+    () => undefined
+  );
 
   let events: EventListItem[] = [];
   if (res?.ok) {

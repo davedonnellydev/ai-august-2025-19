@@ -17,7 +17,9 @@ export default async function WaitingPage() {
             <Text c="dimmed">Signed in as {session.user.email}</Text>
           )}
           <Group justify="space-between" mt="sm">
-            <Text c="dimmed">You will be able to access events once approved.</Text>
+            <Text c="dimmed">
+              You will be able to access events once approved.
+            </Text>
             <AuthButton />
           </Group>
         </Stack>

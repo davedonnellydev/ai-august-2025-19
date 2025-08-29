@@ -8,7 +8,9 @@ import AITab from './tabs/ai';
 export default function AdminTabs() {
   return (
     <Tabs defaultValue="members">
-      <Title order={2} mb="md">Admin dashboard</Title>
+      <Title order={2} mb="md">
+        Admin dashboard
+      </Title>
       <Tabs.List>
         <Tabs.Tab value="members">Members</Tabs.Tab>
         <Tabs.Tab value="events">Events</Tabs.Tab>
@@ -26,5 +28,3 @@ export default function AdminTabs() {
     </Tabs>
   );
 }
-
-
