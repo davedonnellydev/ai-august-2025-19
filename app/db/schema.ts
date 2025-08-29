@@ -42,7 +42,7 @@ export const users = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index('users_role_idx').on(table.role)],
+  (table) => [index('users_role_idx').on(table.role)]
 );
 
 export const clubs = pgTable(
@@ -76,9 +76,9 @@ export const memberships = pgTable(
   },
   (table) => [
     uniqueIndex('memberships_unique_user_per_club').on(
-        table.clubId,
-        table.userId
-      ),
+      table.clubId,
+      table.userId
+    ),
     index('memberships_status_idx').on(table.status),
   ]
 );
@@ -101,9 +101,9 @@ export const events = pgTable(
       .defaultNow(),
   },
   (table) => [
-      index('events_club_idx').on(table.clubId),
-      index('events_starts_at_idx').on(table.startsAt),
-    ]
+    index('events_club_idx').on(table.clubId),
+    index('events_starts_at_idx').on(table.startsAt),
+  ]
 );
 
 export const contentItems = pgTable(
@@ -121,8 +121,9 @@ export const contentItems = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index('content_items_event_idx').on(table.eventId),
-      index('content_items_type_idx').on(table.type),
+  (table) => [
+    index('content_items_event_idx').on(table.eventId),
+    index('content_items_type_idx').on(table.type),
   ]
 );
 
@@ -142,9 +143,8 @@ export const aiOutputs = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [uniqueIndex('ai_outputs_content_item_unique').on(
-        table.contentItemId
-      ),
+  (table) => [
+    uniqueIndex('ai_outputs_content_item_unique').on(table.contentItemId),
   ]
 );
 
@@ -164,11 +164,9 @@ export const rsvps = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [uniqueIndex('rsvps_unique_user_per_event').on(
-        table.eventId,
-        table.userId
-      ),
-      index('rsvps_status_idx').on(table.status),
+  (table) => [
+    uniqueIndex('rsvps_unique_user_per_event').on(table.eventId, table.userId),
+    index('rsvps_status_idx').on(table.status),
   ]
 );
 
@@ -195,7 +193,10 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
 }));
 
 export const contentItemsRelations = relations(contentItems, ({ one }) => ({
-  event: one(events, { fields: [contentItems.eventId], references: [events.id] }),
+  event: one(events, {
+    fields: [contentItems.eventId],
+    references: [events.id],
+  }),
 }));
 
 export const rsvpsRelations = relations(rsvps, ({ one }) => ({
@@ -208,4 +209,3 @@ export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertEvent = typeof events.$inferInsert;
 export type SelectEvent = typeof events.$inferSelect;
-

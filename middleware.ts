@@ -7,7 +7,9 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow public paths
-  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+  if (
+    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
+  ) {
     return NextResponse.next();
   }
 
@@ -27,7 +29,11 @@ export async function middleware(req: NextRequest) {
 
   if (status === 'pending') {
     // Block access to protected app areas when pending
-    if (pathname.startsWith('/api') || pathname.startsWith('/events') || pathname.startsWith('/ai')) {
+    if (
+      pathname.startsWith('/api') ||
+      pathname.startsWith('/events') ||
+      pathname.startsWith('/ai')
+    ) {
       return NextResponse.redirect(new URL('/waiting', req.url));
     }
   }
@@ -40,5 +46,3 @@ export const config = {
     '/((?!_next/|.*\.(?:png|jpg|jpeg|svg|gif|ico|css|js|map)|favicon.ico).*)',
   ],
 };
-
-

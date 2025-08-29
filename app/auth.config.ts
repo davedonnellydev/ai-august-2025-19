@@ -27,8 +27,8 @@ export const authOptions: NextAuthOptions = {
           .insert(users)
           .values({
             email: user.email,
-            name: user.name ?? null as unknown as string,
-            image: user.image ?? null as unknown as string,
+            name: user.name ?? (null as unknown as string),
+            image: user.image ?? (null as unknown as string),
           })
           .onConflictDoNothing();
 
@@ -43,17 +43,26 @@ export const authOptions: NextAuthOptions = {
           if (userRow) {
             await db
               .insert(memberships)
-              .values({ clubId: club.id, userId: userRow.id, status: 'pending' })
+              .values({
+                clubId: club.id,
+                userId: userRow.id,
+                status: 'pending',
+              })
               .onConflictDoNothing();
           }
         }
 
         // If explicitly removed, block sign-in
         if (user?.email && club) {
-          const row = await db.query.users.findFirst({ where: eq(users.email, user.email) });
+          const row = await db.query.users.findFirst({
+            where: eq(users.email, user.email),
+          });
           if (row) {
             const m = await db.query.memberships.findFirst({
-              where: and(eq(memberships.clubId, club.id), eq(memberships.userId, row.id)),
+              where: and(
+                eq(memberships.clubId, club.id),
+                eq(memberships.userId, row.id)
+              ),
               orderBy: [desc(memberships.createdAt)],
             });
             if (m?.status === 'removed') return false;
@@ -68,13 +77,20 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (!token?.email) return token;
       // Refresh user role & membership on each call; cheap single queries
-      const userRow = await db.query.users.findFirst({ where: eq(users.email, token.email) });
+      const userRow = await db.query.users.findFirst({
+        where: eq(users.email, token.email),
+      });
       token.userId = userRow?.id;
       token.role = userRow?.role ?? 'member';
-      const club = await db.query.clubs.findFirst({ where: eq(clubs.slug, 'ai-content-club') });
+      const club = await db.query.clubs.findFirst({
+        where: eq(clubs.slug, 'ai-content-club'),
+      });
       if (club && userRow) {
         const m = await db.query.memberships.findFirst({
-          where: and(eq(memberships.clubId, club.id), eq(memberships.userId, userRow.id)),
+          where: and(
+            eq(memberships.clubId, club.id),
+            eq(memberships.userId, userRow.id)
+          ),
           orderBy: [desc(memberships.createdAt)],
         });
         token.membershipStatus = m?.status ?? 'pending';
@@ -85,7 +101,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.userId as string | undefined;
         (session.user as any).role = (token.role as string) ?? 'member';
-        (session.user as any).membershipStatus = (token.membershipStatus as string) ?? 'pending';
+        (session.user as any).membershipStatus =
+          (token.membershipStatus as string) ?? 'pending';
       }
       return session;
     },
@@ -112,5 +129,3 @@ declare module 'next-auth/jwt' {
     membershipStatus?: 'pending' | 'active' | 'removed';
   }
 }
-
-

@@ -17,9 +17,10 @@ export async function requireAdminOrFacilitator(eventId: string) {
   const role = (user as any).role as 'member' | 'admin' | undefined;
   if (role === 'admin') return user;
 
-  const evt = await db.query.events.findFirst({ where: eq(events.id, eventId) });
+  const evt = await db.query.events.findFirst({
+    where: eq(events.id, eventId),
+  });
   if (!evt) throw new Error('Event not found');
   if (evt.facilitatorUserId === (user as any).id) return user;
   throw new Error('Forbidden');
 }
-

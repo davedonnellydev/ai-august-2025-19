@@ -2,11 +2,19 @@ import 'dotenv/config';
 import { addMonths, set } from 'date-fns';
 import { and, eq } from 'drizzle-orm';
 import { db, pool } from '../app/db/client';
-import { clubs, contentItems, events, memberships, users } from '../app/db/schema';
+import {
+  clubs,
+  contentItems,
+  events,
+  memberships,
+  users,
+} from '../app/db/schema';
 
 async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'davepauldonnelly@gmail.com';
-  const pendingEmail = process.env.SEED_PENDING_EMAIL ?? 'tysondonnelly@gmail.com';
+  const adminEmail =
+    process.env.SEED_ADMIN_EMAIL ?? 'davepauldonnelly@gmail.com';
+  const pendingEmail =
+    process.env.SEED_PENDING_EMAIL ?? 'tysondonnelly@gmail.com';
 
   // Upsert admin user
   const [adminUser] = await db
@@ -35,9 +43,13 @@ async function main() {
     .values({ name: 'AI Content Club', slug: 'ai-content-club' })
     .onConflictDoNothing()
     .returning();
-  const clubId = club?.id ?? (
-    await db.query.clubs.findFirst({ where: eq(clubs.slug, 'ai-content-club') })
-  )?.id;
+  const clubId =
+    club?.id ??
+    (
+      await db.query.clubs.findFirst({
+        where: eq(clubs.slug, 'ai-content-club'),
+      })
+    )?.id;
   if (!clubId) throw new Error('Failed to resolve club id');
 
   // Admin membership active
@@ -60,7 +72,13 @@ async function main() {
 
   // Create next-month event on 25th at 19:00 local
   const nextMonth = addMonths(new Date(), 1);
-  const startsAt = set(nextMonth, { date: 25, hours: 19, minutes: 0, seconds: 0, milliseconds: 0 });
+  const startsAt = set(nextMonth, {
+    date: 25,
+    hours: 19,
+    minutes: 0,
+    seconds: 0,
+    milliseconds: 0,
+  });
   const [event] = await db
     .insert(events)
     .values({
@@ -73,9 +91,16 @@ async function main() {
     .onConflictDoNothing()
     .returning();
 
-  const eventId = event?.id ?? (
-    await db.query.events.findFirst({ where: and(eq(events.clubId, clubId), eq(events.title, 'AI Content Club - September Session')) })
-  )?.id;
+  const eventId =
+    event?.id ??
+    (
+      await db.query.events.findFirst({
+        where: and(
+          eq(events.clubId, clubId),
+          eq(events.title, 'AI Content Club - September Session')
+        ),
+      })
+    )?.id;
   if (!eventId) throw new Error('Failed to resolve event id');
 
   // Content items (up to 2)
@@ -110,5 +135,3 @@ main()
   .finally(async () => {
     await pool.end();
   });
-
-
