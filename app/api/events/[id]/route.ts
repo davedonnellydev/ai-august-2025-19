@@ -14,9 +14,9 @@ const updateEventSchema = z.object({
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
+  const { id } = await ctx.params;
 
   const event = await db.query.events.findFirst({ where: eq(events.id, id) });
   if (!event) {
@@ -41,9 +41,9 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
+  const { id } = await ctx.params;
   await requireAdminOrFacilitator(id);
 
   const json = await req.json();

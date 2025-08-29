@@ -14,9 +14,9 @@ const updateContentItemSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
+  const { id } = await ctx.params;
   const item = await db.query.contentItems.findFirst({
     where: eq(contentItems.id, id),
   });
@@ -44,9 +44,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
+  const { id } = await ctx.params;
   const item = await db.query.contentItems.findFirst({
     where: eq(contentItems.id, id),
   });

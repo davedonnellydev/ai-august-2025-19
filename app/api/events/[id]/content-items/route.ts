@@ -14,9 +14,9 @@ const createContentItemSchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const eventId = params.id;
+  const { id: eventId } = await ctx.params;
   await requireAdminOrFacilitator(eventId);
 
   // Enforce max 3 content items per event

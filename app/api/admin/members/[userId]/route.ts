@@ -12,8 +12,9 @@ const updateMemberSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await context.params;
   await requireAdmin();
   const json = await req.json();
   const body = updateMemberSchema.parse(json);
@@ -28,7 +29,7 @@ export async function PATCH(
   // Ensure membership exists
   await db
     .insert(memberships)
-    .values({ clubId: club.id, userId: params.userId, status: 'pending' })
+    .values({ clubId: club.id, userId, status: 'pending' })
     .onConflictDoNothing();
 
   if (body.membershipStatus) {
@@ -36,28 +37,17 @@ export async function PATCH(
       .update(memberships)
       .set({ status: body.membershipStatus })
       .where(
-        and(
-          eq(memberships.clubId, club.id),
-          eq(memberships.userId, params.userId)
-        )
+        and(eq(memberships.clubId, club.id), eq(memberships.userId, userId))
       );
   }
 
   if (body.promoteToAdmin) {
-    await db
-      .update(users)
-      .set({ role: 'admin' })
-      .where(eq(users.id, params.userId));
+    await db.update(users).set({ role: 'admin' }).where(eq(users.id, userId));
   }
 
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, params.userId),
-  });
+  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
   const membership = await db.query.memberships.findFirst({
-    where: and(
-      eq(memberships.clubId, club.id),
-      eq(memberships.userId, params.userId)
-    ),
+    where: and(eq(memberships.clubId, club.id), eq(memberships.userId, userId)),
     orderBy: [desc(memberships.createdAt)],
   });
 

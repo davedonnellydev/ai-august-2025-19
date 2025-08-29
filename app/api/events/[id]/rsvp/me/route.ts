@@ -5,8 +5,9 @@ import { eq, and } from 'drizzle-orm';
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await ctx.params;
   const session = await auth();
   if (!session?.user?.id) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -14,7 +15,7 @@ export async function GET(
 
   const row = await db.query.rsvps.findFirst({
     where: and(
-      eq(rsvps.eventId, params.id),
+      eq(rsvps.eventId, id),
       eq(rsvps.userId, (session.user as any).id as string)
     ),
   });

@@ -11,8 +11,9 @@ const rsvpSchema = z.object({
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await ctx.params;
   const session = await auth();
   if (!session?.user?.id) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -27,7 +28,7 @@ export async function PUT(
   const [row] = await db
     .insert(rsvps)
     .values({
-      eventId: params.id,
+      eventId: id,
       userId: (session.user as any).id as string,
       status: body.status,
       notes: body.notes ?? null,
