@@ -1,0 +1,292 @@
+---
+description: A one-day, step-by-step build plan for this app
+globs:
+alwaysApply: true
+---
+### A one-day, step-by-step build plan
+
+I’ll assume Netlify default domain, Neon + Drizzle, Google OAuth (created today), OpenAI Responses API with Structured Outputs, single club MVP, pending members require admin approval, simple admin dashboard, and top priorities: AI generation → RSVP → Admin user management.
+
+Below is a timeboxed plan you can follow end-to-end. Each step includes what to do and the key files to touch. Keep this open while you implement.
+
+## 0) Prereqs (60–75 min total)
+
+- **Create Netlify site**
+  - Connect your GitHub repo in Netlify, deploy default build once.
+  - In Netlify Site settings → Environment variables, you’ll add vars later after steps below.
+
+- **Create Neon project**
+  - Create a new Neon Postgres project.
+  - Copy the connection string (psql style URL). This will be your `DATABASE_URL`.
+
+- **Create Google OAuth credentials**
+  - In Google Cloud Console → APIs & Services → Credentials → Create OAuth client.
+  - Type: Web application. Authorized redirect URIs:
+    - Local dev: `http://localhost:3000/api/auth/callback/google`
+    - Netlify: `https://YOUR-SITE.netlify.app/api/auth/callback/google`
+  - Save `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+- **Prepare .env**
+  - Local `.env.local` (and then mirror to Netlify):
+    - `NEXTAUTH_URL=http://localhost:3000`
+    - `NEXTAUTH_SECRET=generate_a_strong_random_string`
+    - `GOOGLE_CLIENT_ID=...`
+    - `GOOGLE_CLIENT_SECRET=...`
+    - `DATABASE_URL=postgres://...` (Neon)
+    - `OPENAI_API_KEY=...`
+
+## 1) Install core deps (10–15 min)
+
+- Add packages:
+  - Auth: `next-auth`
+  - DB/ORM: `drizzle-orm`, `drizzle-kit`, `pg`
+  - Validation: `zod`
+  - UI: `@mantine/core @mantine/hooks @mantine/notifications @emotion/react @emotion/server`
+  - OpenAI: `openai`
+  - Utilities: `date-fns`, `uuid` (optional)
+
+Commands:
+```bash
+npm i next-auth drizzle-orm drizzle-kit pg zod openai @mantine/core @mantine/hooks @mantine/notifications @emotion/react @emotion/server date-fns uuid
+```
+
+Add `drizzle.config.ts` in repo root (points to schema file and `DATABASE_URL`).
+
+## 2) Database schema and setup (60–75 min)
+
+- **Create schema file** `app/db/schema.ts`
+  - Tables: `users`, `clubs`, `memberships`, `events`, `content_items`, `ai_outputs`, `rsvps`.
+  - Notes:
+    - `users.role`: `"member" | "admin"`.
+    - `memberships.status`: `"active" | "pending" | "removed"`.
+    - `events.facilitator_user_id`: nullable; `admin` treated as facilitator for all events in RBAC.
+    - `content_items.type`: `"book" | "podcast" | "film" | "other"`.
+    - `ai_outputs.questions_json`: stringified `string[]`.
+    - `ai_outputs.activities_json`: stringified `{title, description, duration}`[].
+    - `rsvps.status`: `"going" | "maybe" | "not_going"`.
+
+- **DB client** `app/db/client.ts`
+  - Create a single Neon `pg` pool and export a Drizzle instance.
+
+- **Drizzle config**
+  - `drizzle.config.ts` pointing to `app/db/schema.ts`, use `process.env.DATABASE_URL`.
+  - Generate and run migrations:
+    ```bash
+    npx drizzle-kit generate
+    npx drizzle-kit migrate
+    ```
+
+- **Seed script** `scripts/seed.ts`
+  - Seed: one club, one admin user, one sample event (future date), and 1–2 content items.
+  - Set at least 1 member with `status='pending'` for testing admin approval.
+  - Run with:
+    ```bash
+    ts-node scripts/seed.ts
+    ```
+    or add an npm script that transpiles then runs.
+
+## 3) Auth and RBAC (60–75 min)
+
+- **NextAuth route** `app/api/auth/[...nextauth]/route.ts`
+  - Google provider with credentials from env.
+  - Use JWT sessions (no NextAuth DB adapter).
+  - On first sign-in, upsert into our `users` table; default `role='member'`.
+  - Add `jwt` and `session` callbacks to include `role` and `membershipStatus` in the token/session by reading our DB.
+  - Only allow access if `membershipStatus !== 'removed'`.
+
+- **Auth helper** `app/auth.ts`
+  - Export a typed `auth()` wrapper for `getServerSession()` and a `getCurrentUser()` helper.
+
+- **Middleware for gating** `middleware.ts`
+  - For protected routes (`/admin`, event creation, AI generation), redirect to `/waiting` if user is not signed in or is `pending`.
+  - Public routes: `/`, `/api/openai/*` only if needed (but AI actions will be protected).
+
+- **RBAC utilities** `app/lib/authz.ts`
+  - `requireAdminOrFacilitator(eventId)` server-side utility.
+  - `requireAdmin()` for admin-only APIs.
+
+## 4) API routes (90–120 min)
+
+Use Next.js App Router route handlers under `app/api/*`. Validate inputs with `zod`. All write endpoints require `auth()`.
+
+- **Events**
+  - `GET /api/events`: list all future events with counts.
+  - `POST /api/events`: admin only; create event.
+  - `GET /api/events/[id]`: single event with content items and AI outputs.
+  - `PATCH /api/events/[id]`: admin or facilitator.
+
+- **Content Items**
+  - `POST /api/events/[id]/content-items`: admin/facilitator; cap at 3 items.
+  - `PATCH /api/content-items/[id]`: admin/facilitator.
+  - `DELETE /api/content-items/[id]`: admin/facilitator.
+
+- **RSVPs**
+  - `PUT /api/events/[id]/rsvp`: member; upsert `{status, notes}` for current user.
+  - `GET /api/events/[id]/rsvp/me`: fetch current user’s RSVP (optional; or include with event detail).
+
+- **Memberships (Admin)**
+  - `GET /api/admin/members`: list users + membership status.
+  - `PATCH /api/admin/members/[userId]`: update membership status (`pending` → `active`), elevate role to `admin` if needed.
+
+- **AI Generation**
+  - `POST /api/ai/generate`: admin/facilitator; body `{contentItemId}`.
+  - Creates OpenAI Responses request with Structured Outputs JSON schema; writes to `ai_outputs` with `model` and timestamp.
+  - `POST /api/ai/regenerate`: same as generate; overwrites cache.
+
+### Structured Outputs schema (reference)
+Use OpenAI Responses API with Structured Outputs. Example shape:
+```json
+{
+  "short_summary": "string",
+  "long_summary": "string",
+  "questions": ["string", "..."],
+  "activities": [
+    { "title": "string", "description": "string", "duration": 10 }
+  ]
+}
+```
+- Token budget per item: short (~150–200 words), long (~400–600 words), 6–10 questions, 3–5 activities.
+
+## 5) OpenAI integration (45–60 min)
+
+- **Client** `app/lib/ai.ts`
+  - Initialize `OpenAI` using `OPENAI_API_KEY`.
+  - Function `generateAIOutputsForContentItem(contentItem)`:
+    - Builds prompt from `content_items` fields.
+    - Calls `openai.responses.create({ model, input, response_format: { type: 'json_schema', json_schema: {name:'AIOutputs', schema: {...}}}})`.
+    - Parses result and returns a typed object.
+
+- **Schema for Responses API**
+  - Use JSON Schema Draft 2020-12. Keep strict types; use min/maxItems for caps.
+
+## 6) UI: member and admin flows (120–150 min)
+
+- **Layout** `app/layout.tsx`
+  - Mantine `MantineProvider` and a light theme.
+  - Top nav: brand title, Sign in/out, link to `/admin` if `admin`.
+
+- **Landing** `app/page.tsx`
+  - List upcoming events (title, date, venue, number of items).
+  - Clicking an event → `/events/[id]`.
+
+- **Event detail** `app/events/[id]/page.tsx`
+  - Event meta; list up to 3 content items.
+  - For each item: show type, title, link, notes, AI outputs if available (short/long/QA/activities).
+  - RSVP widget: radio group (Going/Maybe/Not going) + textarea notes, save button.
+
+- **Admin dashboard** `app/admin/page.tsx`
+  - Tabs:
+    - Members: table of users with membership status; Approve (pending → active), Promote to Admin.
+    - Events: create event form; list events; for each event, add/edit up to 3 content items.
+    - AI: for each content item, Generate/Regenerate buttons; show last updated.
+  - Admin has full facilitator privileges globally.
+
+- **Waiting page** `app/waiting/page.tsx`
+  - Simple message: “Thanks for joining. An admin will approve you soon.”
+
+- **Auth buttons**
+  - `app/components/AuthButton.tsx`: Show Sign in with Google / Sign out; include on navbar.
+
+## 7) Optional export (30–45 min if time allows)
+
+- On `/events/[id]` or admin AI tab: “Download Discussion Guide” button.
+- Generate Markdown client-side from AI outputs and trigger a blob download:
+  - Sections: Event title/date, per content item: short summary, long summary, questions, activities.
+
+## 8) Testing and quality (45–60 min)
+
+- **Unit tests**
+  - `app/lib/ai.test.ts`: schema validator for AI outputs and a prompt-builder pure function.
+  - Simple component tests for RSVP form behavior (using existing Jest setup).
+
+- **Integration tests**
+  - Route handler test for `PUT /api/events/[id]/rsvp` (with mocked `auth()` and db).
+
+- **CI**
+  - Ensure `npm test`, `npm run typecheck`, `npm run lint` pass locally before pushing.
+
+## 9) Deploy (20–30 min)
+
+- **Netlify env vars**
+  - Add all from `.env.local`, but set `NEXTAUTH_URL=https://YOUR-SITE.netlify.app`.
+- **Build settings**
+  - Build command: `npm run build`
+  - Publish directory: `.next`
+  - Ensure `@netlify/plugin-nextjs` is configured (Netlify auto-detects; add to `netlify.toml` if needed).
+- Deploy, test OAuth callback, DB connectivity, and key flows (sign in, pending → active, RSVP, AI generation).
+
+## 10) Timeboxing and priorities
+
+- If time tight, ship in this order:
+  1) Auth + pending/active gating
+  2) Events + RSVP
+  3) AI generation for content items
+  4) Admin approve + create event + manage items
+  5) Optional export + polishing
+
+---
+
+### Minimal file map (for quick orientation)
+
+- `app/db/schema.ts`, `app/db/client.ts`, `drizzle.config.ts`, `scripts/seed.ts`
+- `app/api/auth/[...nextauth]/route.ts`, `app/auth.ts`, `middleware.ts`, `app/lib/authz.ts`
+- `app/api/events/route.ts`, `app/api/events/[id]/route.ts`
+- `app/api/events/[id]/rsvp/route.ts`
+- `app/api/events/[id]/content-items/route.ts`, `app/api/content-items/[id]/route.ts`
+- `app/api/admin/members/route.ts`, `app/api/admin/members/[userId]/route.ts`
+- `app/api/ai/generate/route.ts`, `app/api/ai/regenerate/route.ts`, `app/lib/ai.ts`
+- `app/page.tsx`, `app/events/[id]/page.tsx`, `app/admin/page.tsx`, `app/waiting/page.tsx`
+- `app/components/AuthButton.tsx`
+
+---
+
+### Seed content (use this)
+
+- Event: “AI Content Club – September Session” on the 25th of next month, 7pm, venue “Community Hub”.
+- Content items:
+  - Type: book; Title: “Deep Work” by Cal Newport; URL: `https://www.calnewport.com/books/deep-work/`; Notes: “Focus, distraction, and productivity.”
+  - Type: podcast; Title: “Lex Fridman – Episode 409 with Geoff Hinton”; URL: `https://lexfridman.com/episodes/`; Notes: “Deep learning and AGI.”
+
+---
+
+### Reference snippets you’ll reuse
+
+- AI outputs JSON schema (concise form you can drop into `response_format`):
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "short_summary": { "type": "string", "minLength": 40, "maxLength": 1200 },
+    "long_summary": { "type": "string", "minLength": 200, "maxLength": 3000 },
+    "questions": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 10,
+      "items": { "type": "string", "minLength": 10, "maxLength": 240 }
+    },
+    "activities": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "minLength": 3, "maxLength": 120 },
+          "description": { "type": "string", "minLength": 20, "maxLength": 800 },
+          "duration": { "type": "integer", "minimum": 5, "maximum": 60 }
+        },
+        "required": ["title", "description", "duration"]
+      }
+    }
+  },
+  "required": ["short_summary", "long_summary", "questions", "activities"]
+}
+```
+
+- RSVP statuses you’ll enforce: `going | maybe | not_going`.
+
+- Membership statuses: `pending | active | removed`.
+
+---

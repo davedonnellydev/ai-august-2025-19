@@ -1,0 +1,132 @@
+---
+description: Outlines app's objectives and architecture
+globs:
+alwaysApply: false
+---
+# AI Content Club App — Build Reference
+
+## Objective
+An AI-powered content club (like a book club but for **any media**: books, podcasts, films, theatre, academic papers etc).  
+Members join monthly events where facilitators set the content. **AI** generates concise summaries, discussion questions, and facilitator activities to run engaging sessions.
+
+---
+
+## Main Features (MVP)
+- **Authentication & Roles**
+  - **Member**: sign in, browse events, RSVP, view AI summaries/questions/activities, keep private notes.
+  - **Facilitator** (per-event): trigger AI generation, bulk generate, export discussion guide (Markdown).
+  - **Admin**: approve members, assign roles, create events, designate facilitators.
+
+- **Events & Content**
+  - Monthly **events** each with **1–3 content items** (book/podcast/film/etc.).
+  - Members can **RSVP** (Going/Maybe/Not going) and add **private prep notes**.
+
+- **AI Assistance**
+  - **Short & long summaries** per content item.
+  - **Open-ended discussion questions**.
+  - **Facilitator activities** with duration and clear goals.
+  - **Exportable “Discussion Guide”** (Markdown).
+
+---
+
+## Architecture & User Flow
+
+### Tech Stack
+- **Frontend**: Next.js (App Router) + TypeScript + Mantine UI.
+- **Auth**: NextAuth.js (Google; RBAC via session claims & middleware).
+- **Backend**: Next.js Route Handlers / Server Actions.
+- **Database**: Neon Postgres + Drizzle ORM.
+- **AI**: OpenAI Responses API (JSON-structured outputs).
+- **Hosting**: **Netlify** (Next.js via `@netlify/plugin-nextjs`, API in Netlify Functions/Edge).
+- **Scheduling (optional)**: Netlify Scheduled Functions for nightly refresh/regeneration.
+
+### User Flow
+1. **Onboarding & Membership**
+   - User signs in → becomes **pending member** → **admin approves** → access granted.
+2. **Event Creation (Admin/Facilitator)**
+   - Create event (title/date/venue) → add **content items** (type/title/url/notes).
+3. **AI Guide Generation (Facilitator/Admin)**
+   - Trigger AI endpoint → store **summaries/questions/activities** → members can view.
+4. **Member Engagement**
+   - Browse events → **RSVP** + add **private notes** → review AI prep.
+5. **Facilitator Preparation**
+   - **Export** Markdown **Discussion Guide** → run session with questions & activities.
+
+---
+
+## Data Model (ERD)
+
+```mermaid
+erDiagram
+  USERS ||--o{ MEMBERSHIPS : "has"
+  CLUBS ||--o{ MEMBERSHIPS : "has"
+  CLUBS ||--o{ EVENTS : "schedules"
+  USERS ||--o{ RSVPS : "responds"
+  EVENTS ||--o{ RSVPS : "collects"
+  EVENTS ||--o{ CONTENT_ITEMS : "includes"
+  CONTENT_ITEMS ||--|| AI_OUTPUTS : "has cached"
+
+  USERS {
+    uuid id PK
+    string name
+    string email UK
+    string image
+    string role  "member|admin (base)"
+    timestamp created_at
+  }
+
+  CLUBS {
+    uuid id PK
+    string name
+    string slug UK
+    text description
+    timestamp created_at
+  }
+
+  MEMBERSHIPS {
+    uuid id PK
+    uuid club_id FK -> CLUBS.id
+    uuid user_id FK -> USERS.id
+    string status  "active|pending|removed"
+    timestamp created_at
+  }
+
+  EVENTS {
+    uuid id PK
+    uuid club_id FK -> CLUBS.id
+    string title
+    timestamp starts_at
+    string venue
+    uuid facilitator_user_id FK -> USERS.id
+    timestamp created_at
+  }
+
+  CONTENT_ITEMS {
+    uuid id PK
+    uuid event_id FK -> EVENTS.id
+    string type  "book|podcast|film|paper|theatre|other"
+    string title
+    text source_url
+    text notes
+    timestamp created_at
+  }
+
+  AI_OUTPUTS {
+    uuid id PK
+    uuid content_item_id FK -> CONTENT_ITEMS.id
+    text short_summary
+    text long_summary
+    text questions_json   "stringified string[]"
+    text activities_json  "stringified {title,description,duration}[]"
+    string model
+    timestamp updated_at
+  }
+
+  RSVPS {
+    uuid id PK
+    uuid event_id FK -> EVENTS.id
+    uuid user_id FK -> USERS.id
+    string status  "going|maybe|not_going"
+    text notes     "private member notes"
+    timestamp created_at
+  }
