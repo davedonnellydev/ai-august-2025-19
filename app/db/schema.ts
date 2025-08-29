@@ -45,19 +45,15 @@ export const users = pgTable(
   (table) => [index('users_role_idx').on(table.role)]
 );
 
-export const clubs = pgTable(
-  'clubs',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    name: varchar('name', { length: 200 }).notNull(),
-    slug: varchar('slug', { length: 200 }).notNull().unique(),
-    description: text('description'),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => []
-);
+export const clubs = pgTable('clubs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 200 }).notNull(),
+  slug: varchar('slug', { length: 200 }).notNull().unique(),
+  description: text('description'),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const memberships = pgTable(
   'memberships',

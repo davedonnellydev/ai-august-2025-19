@@ -20,7 +20,9 @@ export const authOptions: NextAuthOptions = {
     // Prevent sign-in for removed members
     async signIn({ user }) {
       try {
-        if (!user?.email) return false;
+        if (!user?.email) {
+          return false;
+        }
 
         // Ensure base user exists; default role 'member'
         await db
@@ -65,7 +67,9 @@ export const authOptions: NextAuthOptions = {
               ),
               orderBy: [desc(memberships.createdAt)],
             });
-            if (m?.status === 'removed') return false;
+            if (m?.status === 'removed') {
+              return false;
+            }
           }
         }
 
@@ -74,8 +78,10 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
-    async jwt({ token, user }) {
-      if (!token?.email) return token;
+    async jwt({ token }) {
+      if (!token?.email) {
+        return token;
+      }
       // Refresh user role & membership on each call; cheap single queries
       const userRow = await db.query.users.findFirst({
         where: eq(users.email, token.email),
