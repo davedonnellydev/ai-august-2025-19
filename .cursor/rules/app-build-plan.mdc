@@ -9,32 +9,6 @@ I’ll assume Netlify default domain, Neon + Drizzle, Google OAuth (created toda
 
 Below is a timeboxed plan you can follow end-to-end. Each step includes what to do and the key files to touch. Keep this open while you implement.
 
-## 0) Prereqs (60–75 min total)
-
-- **Create Netlify site**
-  - Connect your GitHub repo in Netlify, deploy default build once.
-  - In Netlify Site settings → Environment variables, you’ll add vars later after steps below.
-
-- **Create Neon project**
-  - Create a new Neon Postgres project.
-  - Copy the connection string (psql style URL). This will be your `DATABASE_URL`.
-
-- **Create Google OAuth credentials**
-  - In Google Cloud Console → APIs & Services → Credentials → Create OAuth client.
-  - Type: Web application. Authorized redirect URIs:
-    - Local dev: `http://localhost:3000/api/auth/callback/google`
-    - Netlify: `https://YOUR-SITE.netlify.app/api/auth/callback/google`
-  - Save `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
-
-- **Prepare .env**
-  - Local `.env.local` (and then mirror to Netlify):
-    - `NEXTAUTH_URL=...`
-    - `NEXTAUTH_SECRET=generate_a_strong_random_string`
-    - `GOOGLE_CLIENT_ID=...`
-    - `GOOGLE_CLIENT_SECRET=...`
-    - `DATABASE_URL=postgres://...` (Neon)
-    - `OPENAI_API_KEY=...`
-
 ## 1) Install core deps (10–15 min)
 
 - Add packages:
